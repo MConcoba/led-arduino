@@ -1,23 +1,33 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hcled/app/home.dart';
+import 'package:flutter/services.dart';
+import 'package:hcled/app/elevator.dart';
+import 'package:hcled/app/elevator.screen.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter/rendering.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  debugPaintSizeEnabled = false;
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  
+  const MyApp({Key? key}) : super(key: key);
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Blue',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const HomePage()
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+        builder: (BuildContext context, Widget? child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 1),
+          child: child!,
+        ),
+        theme: ThemeData(primarySwatch: Colors.grey),
+        debugShowCheckedModeBanner: false,
+        initialRoute: "/h",
+        routes: {
+          "/h": (context) => const ElevatorControll(),
+          "/e": (context) => const ElevatorScreen(),
+        },
+        navigatorObservers: <NavigatorObserver>[RouteObserver<ModalRoute>()],
+      );
 }
