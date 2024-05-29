@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hcled/app/elevator.dart';
-import 'package:hcled/app/elevator.screen.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/rendering.dart';
 
@@ -26,7 +25,7 @@ class MyApp extends StatelessWidget {
         initialRoute: "/h",
         routes: {
           "/h": (context) => const ElevatorControll(),
-          "/e": (context) => const ElevatorScreen(),
+          //"/e": (context) => const ElevatorScreen(),
         },
         navigatorObservers: <NavigatorObserver>[RouteObserver<ModalRoute>()],
       );
