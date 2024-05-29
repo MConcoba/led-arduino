@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:hcled/utils/common_widget.dart';
 import 'package:hcled/utils/constans.dart';
@@ -39,70 +37,6 @@ class ElevatorControll extends HookConsumerWidget {
     final isUnderSelectedList =
         useState(List.generate(min * (-1) + 1, (_) => false));
 
-    counterUp() async {
-      int count = 0;
-      isMoving.value = true;
-      await Future.delayed(const Duration(seconds: waitTime)).then((_) {
-        Future.forEach(counter.value.upFromToNumber(nextFloor.value),
-            (int i) async {
-          await Future.delayed(Duration(
-                  milliseconds: i.elevatorSpeed(count, nextFloor.value)))
-              .then((_) async {
-            count++;
-            if (isMoving.value &&
-                counter.value < nextFloor.value &&
-                nextFloor.value < max + 1) counter.value = counter.value + 1;
-            if (counter.value == 0) counter.value = 1;
-            if (isMoving.value &&
-                (counter.value == nextFloor.value || counter.value == max)) {
-              counter.value.clearLowerFloor(
-                  isAboveSelectedList.value, isUnderSelectedList.value);
-              nextFloor.value = counter.value.upNextFloor(
-                  isAboveSelectedList.value, isUnderSelectedList.value);
-              isMoving.value = false;
-              isEmergency.value = false;
-              isDoorState.value = openingState;
-              "isDoorState-up: ${isDoorState.value}".debugPrint();
-              "$nextString${nextFloor.value}".debugPrint();
-            }
-          });
-        });
-      });
-    }
-
-    counterDown() async {
-      int count = 0;
-      isMoving.value = true;
-      await Future.delayed(const Duration(seconds: waitTime)).then((_) {
-        Future.forEach(counter.value.downFromToNumber(nextFloor.value),
-            (int i) async {
-          await Future.delayed(Duration(
-                  milliseconds: i.elevatorSpeed(count, nextFloor.value)))
-              .then((_) async {
-            count++;
-            if (isMoving.value &&
-                min - 1 < nextFloor.value &&
-                nextFloor.value < counter.value) {
-              counter.value = counter.value - 1;
-            }
-            if (counter.value == 0) counter.value = -1;
-            if (isMoving.value &&
-                (counter.value == nextFloor.value || counter.value == min)) {
-              counter.value.clearUpperFloor(
-                  isAboveSelectedList.value, isUnderSelectedList.value);
-              nextFloor.value = counter.value.downNextFloor(
-                  isAboveSelectedList.value, isUnderSelectedList.value);
-              isMoving.value = false;
-              isEmergency.value = false;
-              isDoorState.value = openingState;
-              "isDoorState: ${isDoorState.value}".debugPrint();
-              "$nextString${nextFloor.value}".debugPrint();
-            }
-          });
-        });
-      });
-    }
-
     void receiveData() {
       connection.value?.input?.listen((event) async {
         print(event.length);
@@ -139,12 +73,11 @@ class ElevatorControll extends HookConsumerWidget {
           //List<int> lastTwoElements = event.sublist(event.length - 2);
           print(event);
           print(String.fromCharCodes(event));
-          if(String.fromCharCodes(event) == 'E'){
+          if (String.fromCharCodes(event) == 'E') {
             isPressedPhoneButton.value = true;
-      
           }
 
-          if(String.fromCharCodes(event) == 'F'){
+          if (String.fromCharCodes(event) == 'F') {
             isPressedPhoneButton.value = false;
           }
         }
@@ -170,12 +103,12 @@ class ElevatorControll extends HookConsumerWidget {
       print(connection.value?.isConnected.toString());
       if (connection.value != null &&
           connection.value?.isConnected == true &&
-          deviceConnected.value?.name == 'led01') {
+          deviceConnected.value?.name == 'HC-05') {
         return;
       }
 
       for (final device in devices.value) {
-        if (device.name == 'led01') {
+        if (device.name == 'HC-05') {
           ledDevice = device;
           print(ledDevice.name);
           break;
@@ -259,38 +192,6 @@ class ElevatorControll extends HookConsumerWidget {
       };
     }, []);
 
-    void _requestPermission() async {
-      await Permission.location.request();
-      await Permission.bluetooth.request();
-      await Permission.bluetoothScan.request();
-      await Permission.bluetoothConnect.request();
-    }
-
-    doorsClosing() async {
-      if (!isMoving.value &&
-          !isEmergency.value &&
-          (isDoorState.value == openedState ||
-              isDoorState.value == openingState)) {
-        isDoorState.value = closingState;
-        "isDoorState: ${isDoorState.value}".debugPrint();
-        //await context.closeDoor().speakText(flutterTts, isSoundOn.value);
-        await Future.delayed(const Duration(seconds: waitTime)).then((_) {
-          if (!isMoving.value &&
-              !isEmergency.value &&
-              isDoorState.value == closingState) {
-            isDoorState.value = closedState;
-            "isDoorState: ${isDoorState.value}".debugPrint();
-            (counter.value < nextFloor.value)
-                ? counterUp()
-                : (counter.value > nextFloor.value)
-                    ? counterDown()
-                    : null;
-            //context.pushNumber().speakText(flutterTts, isSoundOn.value);
-          }
-        });
-      }
-    }
-
     pressedOpen() {
       isPressedOpenButton.value = true;
       //selectButton.playAudio(audioPlayer, isSoundOn.value);
@@ -309,51 +210,11 @@ class ElevatorControll extends HookConsumerWidget {
 
     pressedClose() {
       isPressedCloseButton.value = true;
-      Future.delayed(const Duration(milliseconds: flashTime)).then((_) {
-        if (!isMoving.value &&
-            !isEmergency.value &&
-            (isDoorState.value == openedState ||
-                isDoorState.value == openingState)) {
-          doorsClosing();
-        }
-      });
     }
 
     pressedAlert() async {
       isPressedPhoneButton.value = true;
       sendData('E');
-    }
-
-    longPressedAlert() async {
-      if (isMoving.value) isEmergency.value = true;
-      if (isEmergency.value && isMoving.value) {
-        //callSound.playAudio(audioPlayer, isSoundOn.value);
-        await Future.delayed(const Duration(seconds: waitTime)).then((_) {
-          //context.emergency().speakText(flutterTts, isSoundOn.value);
-          nextFloor.value = counter.value;
-          isMoving.value = false;
-          isEmergency.value = true;
-          counter.value.clearLowerFloor(
-              isAboveSelectedList.value, isUnderSelectedList.value);
-          counter.value.clearUpperFloor(
-              isAboveSelectedList.value, isUnderSelectedList.value);
-        });
-        await Future.delayed(const Duration(seconds: openTime)).then((_) async {
-          //context.return1st().speakText(flutterTts, isSoundOn.value);
-        });
-        await Future.delayed(const Duration(seconds: waitTime * 2))
-            .then((_) async {
-          if (counter.value != 1) {
-            nextFloor.value = 1;
-            "$nextString${nextFloor.value}".debugPrint();
-            (counter.value < nextFloor.value) ? counterUp() : counterDown();
-          } else {
-            //context.openDoor().speakText(flutterTts, isSoundOn.value);
-            isDoorState.value = openingState;
-            "isDoorState: ${isDoorState.value}".debugPrint();
-          }
-        });
-      }
     }
 
     floorSelected(int i, bool selectFlag) async {
@@ -376,18 +237,6 @@ class ElevatorControll extends HookConsumerWidget {
           isMoving.value = false;
 
           sendData(i.toString());
-          /* await Future.delayed(const Duration(seconds: waitTime))
-              .then((_) async {
-            if (!isMoving.value &&
-                !isEmergency.value &&
-                isDoorState.value == closedState) {
-              (counter.value < nextFloor.value)
-                  ? counterUp()
-                  : (counter.value > nextFloor.value)
-                      ? counterDown()
-                      : null;
-            }
-          }); */
         }
       }
     }
@@ -476,15 +325,20 @@ class ElevatorControll extends HookConsumerWidget {
           ),
         );
 
-    Widget _controlBT() {
-      return Row(
-        children: [
-          SizedBox(width: context.buttonMargin()),
-          Text(
-              'Elevador conectado: ${deviceConnected.value?.name ?? 'ninguno'}'),
-        ],
-      );
-    }
+  Widget controlBT(BuildContext context) {
+  return Row(
+    children: [
+      SizedBox(width: context.buttonMargin()),
+      Expanded(
+        child: Text(
+          'Elevador conectado: ${deviceConnected.value?.name ?? 'ninguno'}',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    ],
+  );
+}
+
 
     return Scaffold(
       backgroundColor: grayColor,
@@ -498,7 +352,7 @@ class ElevatorControll extends HookConsumerWidget {
               decoration: metalDecoration(),
               child: Column(children: [
                 const Spacer(flex: 2),
-                _controlBT(),
+                controlBT(context),
                 const Spacer(flex: 1),
                 //SizedBox(height: context.displayMargin()),
                 displayArrowNumber(),
